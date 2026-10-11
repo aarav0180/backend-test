@@ -4,3 +4,7 @@
 !/run-test2.ps1
 !/api.js
 !/.gitignore
+
+!/20261012-005754/
+!/20261012-005754/**
+!/RESULTS.md

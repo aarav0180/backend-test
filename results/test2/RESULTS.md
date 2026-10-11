@@ -1,0 +1,60 @@
+# Test 2 results: 5,000-number calculation load test
+
+- **Run:** 20261012-005754 (2026-10-12 local time); k6 v2.2.0 on Windows PowerShell.
+- **Request:** POST `/calculate` with 5,000 deterministic integers.
+- **Stages:** 25, 50, 100, 200, 400, 800 VUs; 30 seconds per stage plus up to 5 seconds graceful stop.
+- **Stop rule:** stop escalating a service once that stage's failed HTTP request ratio reaches at least 30%; otherwise keep going. Failed checks are shown separately.
+- **Order:** FastAPI, Flask, Express, Node HTTP, C++, Rust; services ran sequentially.
+
+See the detailed method in [`README.md`](README.md). Raw per-stage JSON and `.log` files, plus CSV, are in [`20261012-005754`](20261012-005754/README.md).
+
+| Service | VUs | Requests | Failed requests | Failure % | Failed checks | RPS | Avg ms | P95 ms | P99 ms |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| fastapi | 25 | 237 | 1 | 0.42 | 2 | 6.77 | 2,917.39 | 11,134.52 | 17,256.18 |
+| fastapi | 50 | 458 | 1 | 0.22 | 2 | 13.09 | 3,270.21 | 12,119.67 | 19,360.45 |
+| fastapi | 100 | 1014 | 1 | 0.10 | 2 | 28.97 | 2,862.57 | 11,133.98 | 17,203.47 |
+| fastapi | 200 | 2084 | 3 | 0.14 | 6 | 59.53 | 2,715.92 | 10,325.74 | 16,998.94 |
+| fastapi | 400 | 2749 | 1350 | 49.11 | 2700 | 78.50 | 3,424.25 | 16,158.83 | 20,864.36 |
+| flask | 25 | 110 | 0 | 0.00 | 0 | 3.14 | 6,853.85 | 22,998.58 | 23,148.59 |
+| flask | 50 | 509 | 0 | 0.00 | 0 | 14.54 | 2,698.03 | 8,697.76 | 16,663.08 |
+| flask | 100 | 1026 | 0 | 0.00 | 0 | 29.31 | 2,768.54 | 9,994.32 | 16,780.61 |
+| flask | 200 | 2215 | 4 | 0.18 | 8 | 63.27 | 2,644.15 | 9,480.58 | 16,706.26 |
+| flask | 400 | 3055 | 1654 | 54.14 | 3308 | 87.27 | 3,079.72 | 15,486.64 | 20,063.39 |
+| express | 25 | 104 | 0 | 0.00 | 0 | 2.97 | 7,098.56 | 22,703.25 | 23,001.76 |
+| express | 50 | 467 | 1 | 0.21 | 2 | 13.34 | 3,008.03 | 10,765.17 | 18,697.52 |
+| express | 100 | 960 | 3 | 0.31 | 6 | 27.43 | 2,757.37 | 10,071.46 | 17,306.99 |
+| express | 200 | 1876 | 20 | 1.07 | 40 | 53.60 | 2,774.32 | 10,844.55 | 16,869.15 |
+| express | 400 | 3307 | 1709 | 51.68 | 3418 | 94.46 | 2,927.92 | 15,288.52 | 18,335.12 |
+| node-http | 25 | 102 | 0 | 0.00 | 0 | 2.91 | 7,334.05 | 22,992.83 | 23,303.18 |
+| node-http | 50 | 530 | 0 | 0.00 | 0 | 15.14 | 2,733.18 | 11,759.66 | 16,610.28 |
+| node-http | 100 | 336 | 89 | 26.49 | 171 | 9.60 | 8,727.38 | 29,288.51 | 30,728.65 |
+| node-http | 200 | 909 | 6 | 0.66 | 12 | 25.97 | 5,514.27 | 18,270.56 | 26,023.19 |
+| node-http | 400 | 2183 | 18 | 0.82 | 36 | 62.35 | 3,624.80 | 16,556.08 | 25,689.55 |
+| node-http | 800 | 3669 | 2744 | 74.79 | 5488 | 104.78 | 2,362.51 | 10,538.24 | 17,887.66 |
+| cpp | 25 | 99 | 6 | 6.06 | 12 | 2.83 | 4,998.97 | 16,128.92 | 18,032.91 |
+| cpp | 50 | 529 | 1 | 0.19 | 2 | 15.11 | 2,754.90 | 10,089.00 | 17,405.44 |
+| cpp | 100 | 1052 | 0 | 0.00 | 0 | 30.06 | 2,770.74 | 10,966.65 | 16,367.36 |
+| cpp | 200 | 1988 | 17 | 0.86 | 34 | 56.79 | 2,772.64 | 10,324.38 | 16,676.20 |
+| cpp | 400 | 3133 | 1578 | 50.37 | 3156 | 89.47 | 3,011.71 | 15,327.84 | 19,534.40 |
+| rust | 25 | 151 | 1 | 0.66 | 2 | 4.31 | 4,884.26 | 12,744.79 | 14,908.01 |
+| rust | 50 | 401 | 1 | 0.25 | 2 | 11.46 | 3,539.60 | 13,559.01 | 19,667.15 |
+| rust | 100 | 924 | 9 | 0.97 | 18 | 26.40 | 2,606.37 | 9,858.75 | 16,157.89 |
+| rust | 200 | 2080 | 9 | 0.43 | 18 | 59.41 | 2,721.57 | 10,017.76 | 16,793.07 |
+| rust | 400 | 2751 | 1736 | 63.10 | 3472 | 78.57 | 3,098.02 | 15,631.35 | 18,916.05 |
+
+## Threshold outcomes
+
+| Service | Last stage | Failure rate | Outcome |
+|---|---:|---:|---|
+| fastapi | 400 | 49.11% | Stopped at 30%+ threshold |
+| flask | 400 | 54.14% | Stopped at 30%+ threshold |
+| express | 400 | 51.68% | Stopped at 30%+ threshold |
+| node-http | 800 | 74.79% | Stopped at 30%+ threshold |
+| cpp | 400 | 50.37% | Stopped at 30%+ threshold |
+| rust | 400 | 63.10% | Stopped at 30%+ threshold |
+
+## Notes
+
+Some early stages had small failure rates below 30%; the script correctly continued escalation. Node HTTP had 26.49% failures at 100 VUs, then lower rates at 200 and 400 VUs, before reaching 74.79% at 800 VUs. This non-monotonic behavior illustrates that network and host variation affect this one run.
+
+For each request, k6 records client-observed HTTP duration. p95 is the latency at or below which 95% of requests completed; it is not a failure rate. A request can contribute up to two failed checks, which are distinct from HTTP request failures. These results are not a stable framework ranking because the run was sequential, had no separate warm-up, and includes Render/network overhead.

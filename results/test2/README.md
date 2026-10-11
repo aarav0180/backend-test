@@ -1,43 +1,57 @@
-# Test 2: 5,000-number load test with 30% stop threshold
+# Test 2: 5,000-number Render load test
 
-## Status
+## Purpose
 
-This is the prepared next test; it has **not** completed yet. Run `run-test2.ps1` from PowerShell in the repository. It reads deployed URLs from the local, Git-ignored `benchmark/targets.json`.
+Test 2 compares the six API implementations under the same JSON workload and increasing concurrency. It is a hosted-service stress test: measurements include the client machine and network, TLS, Render routing and compute, request queueing, JSON parsing, the calculation, and response serialization. It does not isolate language or framework performance alone.
 
-## Test plan
+The complete stage-by-stage result table is in [`RESULTS.md`](RESULTS.md). The raw summaries, console logs, generated CSV, and run-specific report are in [`20261012-005754`](20261012-005754/README.md).
 
-- Endpoint: `POST /calculate`.
-- Payload: 5,000 integers generated deterministically by the included k6 script.
-- Load levels: 25, 50, 100, 200, 400, and 800 constant virtual users (VUs); each stage runs for 30 seconds unless the stop rule is met first.
-- Services run sequentially: FastAPI, Flask, Express, Node HTTP, C++, Rust. A service reaching the threshold does not stop testing the remaining services.
-- Stop escalating one service only when at least 30% of that stage's HTTP requests fail: failed HTTP requests divided by all HTTP requests is greater than or equal to 0.30. Failures below 30% do not stop escalation. Failed response checks are recorded separately and do not count toward this threshold.
-- k6 output streams to the terminal and is also saved in a `.log` file. Per-stage k6 JSON summaries, a CSV, and a result README are written to a timestamped folder.
+## Services and deployment
 
-This measures the complete hosted path: client network, TLS, Render routing and compute, queueing, JSON parsing, calculation, and response encoding. It is not a framework-only laboratory benchmark.
+Each API is a separate Render web service from this repository's `render.yaml`. The services use the same configured Free plan and Singapore region, with separate per-service instances. The benchmark ran against their public Render URLs from a Windows computer. Test 2 did not run all six services at the same instant; it finished all stages for one service before moving to the next.
 
-## Run on Windows PowerShell
+The load generator used k6 v2.2.0. The six tested implementations were FastAPI, Flask, Express, bare Node HTTP, C++/Crow, and Rust/Axum. The local target file (`benchmark/targets.json`) supplied each base URL and is excluded from Git. It contains no credentials in this setup; do not place credentials or private tokens in target URLs.
 
-From the repository root:
+## Request and workload
+
+Every iteration sent one `POST /calculate` request with JSON shaped like `{"numbers":[...]}`. The `numbers` array had 5,000 integers, generated deterministically by the included k6 script using `((i * 37) % 2001) - 1000`. All six services used the same generated payload for each request. The API validates the input and returns count, sum, minimum, maximum, mean, and median.
+
+The k6 script made two checks per response: HTTP status must be 200, and the response `count` must equal 5,000. The script did not set a request-rate limit or add think time between iterations.
+
+## Load stages and stop rule
+
+For each service, k6 used the `constant-vus` executor at 25, 50, 100, 200, 400, then 800 virtual users (VUs). Each stage ran for 30 seconds and allowed up to 5 seconds of graceful stop so in-flight iterations could finish. A VU repeatedly sent the next request after its previous iteration completed; VUs are concurrent workers, not requests per second.
+
+After every stage, the PowerShell runner read the raw k6 summary and calculated:
+
+`HTTP failure ratio = failed HTTP requests / total HTTP requests`
+
+If that ratio was **at least 30%**, the runner stopped escalating that service and moved to the next service. If it was below 30%, even when some requests failed, the runner continued to the next VU level. Failed response checks were reported separately and did not activate this stop rule. The services were processed in this fixed order: FastAPI, Flask, Express, Node HTTP, C++, Rust.
+
+The first attempt on this test was interrupted by Windows PowerShell treating a k6 stderr warning as a fatal error. That partial attempt is not included in the published run. The completed run used the corrected runner, which allows k6 to finish stages when it emits transient stderr warnings.
+
+## What was saved
+
+The completed run directory contains a JSON summary and a full terminal log for every stage that ran. It also contains a CSV and a generated README with the results. The persistent `RESULTS.md` at this folder's root gives a readable table across all six services. The runner and exact k6 scenario are [`run-test2.ps1`](run-test2.ps1) and [`api.js`](api.js).
+
+## How to reproduce
+
+From the repository root in Windows PowerShell, with k6 on `PATH` and a local `benchmark/targets.json` present:
 
 ```powershell
 .\results\test2\run-test2.ps1
 ```
 
-Requirements: k6 installed and available as `k6` on PATH; `benchmark\targets.json` copied from `benchmark\targets.example.json`. The targets file is ignored by Git. Do not put access tokens, passwords, or other secrets in committed scripts or reports.
+The script creates a new timestamped directory each time. Generated run folders are excluded from Git by default to prevent accidental publication; review output before explicitly including a new run in a commit. This completed run was explicitly selected for archival.
 
-Windows PowerShell 5.1 can treat k6's native stderr warnings (for example, a transient `EOF`) as terminating errors when stopping on errors is enabled. The runner temporarily allows those messages through so k6 can finish the stage, save its summary, and let the 30% threshold logic decide whether to continue. If a stage ends before a summary is written, it is incomplete; rerun the test after updating the runner. Each rerun uses a new timestamped folder, so earlier partial output remains available locally.
+## Interpreting the measurements
 
-The exact scripts are [`run-test2.ps1`](run-test2.ps1) and [`api.js`](api.js). The runner creates the actual result README and CSV after a completed run. Generated run folders are ignored by Git until reviewed and intentionally selected for archival.
+- **Requests/RPS:** number of HTTP requests k6 completed and the achieved requests per second. RPS is an observed rate, not the VU setting.
+- **Failed requests:** network errors, timeouts, or unexpected HTTP responses as counted by k6. The 30% stop condition uses this count divided by all HTTP requests in that same stage.
+- **Failed checks:** assertion failures about the response. One request can fail both checks, so failed checks can be roughly twice the number of failed requests.
+- **Average / p95 / p99 latency:** request duration in milliseconds. p95 is the point at or below which 95% of requests completed; the slowest 5% took longer. It is not the average and does not mean 95% failed.
+- **Payload size:** 5,000 array elements, not 5,000 bytes.
 
-## k6 terms
+## Limits
 
-- **VU (virtual user):** a worker repeatedly executing the scenario. 800 VUs means up to 800 concurrent workers, not 800 requests per second.
-- **RPS:** achieved HTTP requests per second, not the configured VU count.
-- **Latency:** elapsed time for an HTTP request from k6's perspective. **p95** is the time at or below which 95% of observed requests completed; the slowest 5% took longer. It is not average latency or a failure percentage.
-- **Failed request:** an HTTP request k6 marks failed because of a network/timeout error or unexpected status. The stop threshold is computed per stage from failed requests divided by total requests.
-- **Failed check:** a response assertion failure, such as an incorrect status or JSON body. These are reported separately from the stop threshold.
-- **Payload size:** number of integers in the JSON array, not the encoded body size in bytes.
-
-## Results
-
-Pending completion. The runner will write the measured table, raw JSON summaries, and logs in the timestamped result folder.
+This was one sequential run with one 30-second measurement stage per VU level and no dedicated warm-up or rotated service order. Early requests may include service wake-up or connection setup. There can also be variation from the public network and Render's shared Free-tier host environment. A high p95 or a small number of failures in one stage should not be treated as a stable ranking. The results show what happened in this run; repeated runs with randomized service order and warm-up would be needed for a stronger comparison.

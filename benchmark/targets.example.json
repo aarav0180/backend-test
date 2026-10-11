@@ -1,0 +1,8 @@
+{
+  "fastapi": "https://backend-bench-fastapi.onrender.com",
+  "flask": "https://backend-bench-flask.onrender.com",
+  "express": "https://backend-bench-express.onrender.com",
+  "node-http": "https://backend-bench-node-http.onrender.com",
+  "cpp": "https://backend-bench-cpp.onrender.com",
+  "rust": "https://backend-bench-rust.onrender.com"
+}

@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: backend-bench-fastapi
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: apps/fastapi
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+
+  - type: web
+    name: backend-bench-flask
+    runtime: python
+    plan: free
+    region: singapore
+    rootDir: apps/flask
+    buildCommand: pip install -r requirements.txt
+    startCommand: waitress-serve --listen=0.0.0.0:$PORT app:app
+    healthCheckPath: /health
+
+  - type: web
+    name: backend-bench-express
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: apps/express
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+
+  - type: web
+    name: backend-bench-node-http
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: apps/node-http
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+
+  - type: web
+    name: backend-bench-cpp
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./apps/cpp/Dockerfile
+    dockerContext: ./apps/cpp
+    healthCheckPath: /health
+
+  - type: web
+    name: backend-bench-rust
+    runtime: rust
+    plan: free
+    region: singapore
+    rootDir: apps/rust
+    buildCommand: cargo build --release
+    startCommand: ./target/release/backend-bench-rust
+    healthCheckPath: /health

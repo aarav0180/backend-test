@@ -1,0 +1,6 @@
+# Keep future run output local until reviewed for sensitive data and selected for archival.
+/*
+!/README.md
+!/run-test2.ps1
+!/api.js
+!/.gitignore

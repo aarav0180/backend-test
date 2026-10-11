@@ -59,9 +59,9 @@ function textSummary(data) {
   const ms = (value) => Number.isFinite(value) ? `${value.toFixed(2)} ms` : 'n/a';
   return [
     `scenario: ${scenario}${scenario === 'calculate' ? ` (${size} numbers)` : ''}`,
-    `requests/sec: ${reqMetric.rate ?? 'n/a'}`,
+    `requests/sec: ${reqMetric.values?.rate ?? 'n/a'}`,
     `latency: avg ${ms(durationMetric.values?.avg)}, p50 ${ms(durationMetric.values?.med)}, p95 ${ms(durationMetric.values?.['p(95)'])}, p99 ${ms(durationMetric.values?.['p(99)'])}`,
-    `failed requests: ${failedMetric.values?.rate ?? 'n/a'}`,
+    `failed requests: ${Number.isFinite(failedMetric.values?.rate) ? `${(failedMetric.values.rate * 100).toFixed(2)}%` : 'n/a'}`,
     `checks passed: ${checkMetric.values?.passes ?? 0}; failed: ${checkMetric.values?.fails ?? 0}`,
     '',
   ].join('\n');

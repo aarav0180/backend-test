@@ -1,0 +1,2 @@
+# Keep replay output local until reviewed; test1's archived result files remain tracked.
+/replays/

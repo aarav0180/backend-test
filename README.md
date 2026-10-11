@@ -37,6 +37,18 @@ Requires PowerShell 7+ and k6. Use `-Only smoke` for request/response checks or 
 
 The benchmark measures the complete hosted request path, including network and Render behavior. It is useful for comparing these deployments on Render's Free plan, but it is not a framework-only laboratory benchmark. Render Free services can spin down after 15 idle minutes and share a monthly workspace allowance of 750 instance hours. Keep cold-start results separate from warm performance results.
 
+## Understanding the k6 measurements
+
+- **VU (virtual user):** one k6 worker repeatedly runs the scenario. `VUS=25` means up to 25 iterations can be in flight concurrently; it does not mean 25 requests per second. Each VU waits for its request to finish before starting its next iteration, so slow responses reduce the achieved request rate.
+- **Request rate / RPS:** HTTP requests completed per second (`http_reqs` rate). It is an observed result, not a target or a configured limit.
+- **Latency:** time for one HTTP request, measured by k6 from the load generator. It includes internet/network/TLS and Render processing, not just application code. The summary reports average, median (p50), p95, and p99.
+- **Percentile (p95):** the 95th percentile means 95% of measured requests finished in that time or less, while the slowest 5% took longer. For example, p95 = 500 ms means 95 out of 100 requests completed in 500 ms or less. It is not the average and does not mean 95% of requests failed.
+- **Failure rate:** share of HTTP requests k6 considers failed, such as network errors, timeouts, or unexpected HTTP statuses. The raw JSON stores this in `http_req_failed.values.rate`; multiply by 100 for percent. Failed checks are a separate count of assertion failures (for example, a wrong JSON response), and one request can fail more than one check.
+- **Payload size:** for `/calculate`, the number of integers in the JSON array, not the number of bytes. Larger arrays take more bandwidth and require more parsing/calculation work.
+- **Stage:** a fixed combination of payload size, VU count, and duration. Compare frameworks only at matching stages. A run that stops at the first failed stage has no result for later VU levels.
+
+The scripts in [`results/test1`](results/test1/README.md) replay the original 10,000-number test. The planned 5,000-number test, which escalates through 800 VUs and stops a service once its HTTP request failure ratio reaches 30%, is documented in [`results/test2`](results/test2/README.md). Each test folder contains its PowerShell runner and k6 script reference; run-specific JSON, logs, and a generated result README are saved under a timestamped subfolder. Keep `benchmark/targets.json` local: it is ignored by Git so deployment URLs or future credentials are not accidentally committed.
+
 ## API contract
 
 ### `GET /health`

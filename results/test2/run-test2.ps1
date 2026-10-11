@@ -39,11 +39,18 @@ foreach ($service in $services) {
     $env:VUS = [string]$vus
     $env:DURATION = $Duration
     $env:SUMMARY_FILE = $summaryPath
+    $previousErrorActionPreference = $ErrorActionPreference
     try {
+      # Windows PowerShell 5.1 can turn native stderr (for example, a k6
+      # transient EOF warning) into a terminating NativeCommandError when the
+      # preference is Stop. Keep those k6 diagnostics visible and logged while
+      # allowing k6 to finish the stage and produce its summary.
+      $ErrorActionPreference = 'Continue'
       & k6 run $k6Script 2>&1 | Tee-Object -FilePath $logPath
       $exitCode = $LASTEXITCODE
     }
     finally {
+      $ErrorActionPreference = $previousErrorActionPreference
       Remove-Item Env:BASE_URL, Env:SCENARIO, Env:PAYLOAD_SIZE, Env:VUS, Env:DURATION, Env:SUMMARY_FILE -ErrorAction SilentlyContinue
     }
 

@@ -41,6 +41,8 @@ compile_commands.json
 benchmark/targets.json
 results/*
 !results/.gitkeep
+!results/test1/
+!results/test1/**
 
 # Editor and operating system files
 .DS_Store

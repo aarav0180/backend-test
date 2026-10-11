@@ -49,6 +49,14 @@ The benchmark measures the complete hosted request path, including network and R
 
 The scripts in [`results/test1`](results/test1/README.md) replay the original 10,000-number test. The planned 5,000-number test, which escalates through 800 VUs and stops a service once its HTTP request failure ratio reaches 30%, is documented in [`results/test2`](results/test2/README.md). Each test folder contains its PowerShell runner and k6 script reference; run-specific JSON, logs, and a generated result README are saved under a timestamped subfolder. Keep `benchmark/targets.json` local: it is ignored by Git so deployment URLs or future credentials are not accidentally committed.
 
+## What Test 2 measured and what it showed
+
+Test 2 sent concurrent `POST /calculate` requests with 5,000 integers in each JSON body. Each service was tested sequentially at 25, 50, 100, 200, 400, and, when it remained below the stop threshold, 800 constant VUs. Each stage lasted 30 seconds, with up to 5 seconds for graceful shutdown. The runner stopped escalating a service when at least 30% of that stage's HTTP requests failed. It recorded request count, failed requests and response checks, achieved RPS, and average, p95, and p99 request latency. Latency covers the client-to-Render request path as well as application work.
+
+In this run, FastAPI, Flask, Express, C++, and Rust first crossed the 30% failure threshold at 400 VUs. Bare Node HTTP remained below the threshold through 400 VUs and crossed it at 800 VUs. At 200 VUs, none crossed the threshold, though a few requests failed. Node HTTP's failure rate was non-monotonic: it was 26.49% at 100 VUs, then lower at 200 and 400, before rising to 74.79% at 800. The highest RPS values at stages where failures exceeded 30% are not evidence of useful capacity, because many requests were failing.
+
+The result is a snapshot of these six Render Free deployments under this workload. It does not prove that Node.js is generally more scalable or that C++ and Rust are slower: the benchmark includes networking, TLS, Render behavior, queueing, JSON handling, and application code; it was one sequential run without a separate warm-up or randomized service order. The 30% threshold was a test stop rule, not an acceptable production error rate. See the [Test 2 result table](results/test2/RESULTS.md), [methodology](results/test2/README.md), and [raw stage files](results/test2/20261012-005754/README.md).
+
 ## API contract
 
 ### `GET /health`
